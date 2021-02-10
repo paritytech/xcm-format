@@ -76,6 +76,7 @@ Where message `type` must be one of:
 - `4`: `Transact`
 - `5`: `RelayTo`
 - `6`: `RelayedFrom`
+- `7`: `AccountClaim`
 
 Within XCM, there is an internal datatype `Order`, which encodes an operation on the holding account. It is defined as:
 
@@ -173,6 +174,16 @@ Kind: *Trusted Indication*.
 
 Errors:
 
+### `AccountClaim`
+Sends a claim verified to be from the `source` to the `destination` on the parachain. It has an `expiration` timestamp and a `scope` used to define the scope under which such a `claim` is made. A chain should only send such a claim if it is verified to have been intended to be sent by the `source`. It facilitates authentication across parachains.
+
+- `source: MultiLocation`
+- `destination: MultiLocation`
+- `expiration: Compact<u48>`: Timestamp of the claim expiration
+- `scope: Vec<u8>`
+
+Errors:
+
 ## `Order` Types
 
 ### `Null`
@@ -222,7 +233,6 @@ Remove the asset(s) (`assets`) from holding and send a `WithdrawAsset` XCM messa
   be executed on them. There will typically be only one valid location on any given asset/chain combination.
 - `effects: Vec<Order>`: The orders to execute on the assets once withdrawn *on the reserve location*.
 
-Errors:
 
 ### `InitiateTeleport`
 
