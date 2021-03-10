@@ -76,6 +76,12 @@ Where message `type` must be one of:
 - `4`: `Transact`
 - `5`: `RelayTo`
 - `6`: `RelayedFrom`
+- `7`: `HrmpNewChannelOpenRequest`
+- `8`: `HrmpChannelAccepted`
+- `9`: `HrmpChannelClosing`
+- `10`: `HrmpInitOpenChannel`
+- `11`: `HrmpAcceptOpenChannel`
+- `12`: `HrmpCloseChannel`
 
 Within XCM, there is an internal datatype `Order`, which encodes an operation on the holding account. It is defined as:
 
@@ -107,6 +113,8 @@ Parameter(s):
 - `assets: Vec<MultiAsset>` The asset(s) to be withdrawn.
 - `effect: Vec<Order>` What should be done with the assets.
 
+Kind: *Instruction*.
+
 ### `ReserveAssetDeposit`
 
 A notification message that the *Origin* has received `assets` into a *Sovereign* account controled by the *Recipient*. The `asset` should be minted into the *Holding Account* and some `effect` evaluated on it.
@@ -115,6 +123,8 @@ Parameter(s):
 
 - `assets: Vec<MultiAsset>` The asset(s) that were transfered.
 - `effect: Vec<Order>` What should be done with the assets.
+
+Kind: *Instruction*.
 
 ### `TeleportAsset`
 
@@ -125,12 +135,16 @@ Parameter(s):
 - `assets: Vec<MultiAsset>` The asset(s) which were debited.
 - `effect: Vec<Order>` What should be done with the assets.
 
+Kind: *Instruction*.
+
 ### `Balances`
 
 Informational message detailing some balances, interpreted based on the context of the destination and the `query_id`.
 
 - `query_id` The identifier of the query which caused this message to be sent.
 - `assets` The value for use by the destination.
+
+Kind: *Query Responses*.
 
 ### `Transact`
 
@@ -170,6 +184,98 @@ A message (`inner`) was sent to `origin` from `superorigin` with the intention o
 Safety: `superorigin` must express a sub-consensus only; it may *NEVER* contain a `Parent` junction.
 
 Kind: *Trusted Indication*.
+
+Errors:
+
+### `HrmpNewChannelOpenRequest`
+
+A message to notify about a new incoming HRMP channel. This message is meant to be sent by the
+relay-chain to a para.
+
+- `sender: u32 (Compact)`: The sender in the to-be opened channel. Also, the initiator of the channel opening.
+- `max_message_size: u32 (Compact)`: The maximum size of a message proposed by the sender.
+- `max_capacity: u32 (Compact)`: The maximum number of messages that can be queued in the channel.
+
+Safety: The message should originate directly from the relay-chain.
+
+Kind: *System Notification*
+
+### `HrmpChannelAccepted`
+
+A message to notify about that a previously sent open channel request has been accepted by
+the recipient. That means that the channel will be opened during the next relay-chain session
+change. This message is meant to be sent by the relay-chain to a para.
+
+- `recipient: u32 (Compact)`: The recipient in the to-be opened channel.
+
+Safety: The message should originate directly from the relay-chain.
+
+Kind: *System Notification*
+
+Errors:
+
+### `HrmpChannelClosing`
+
+A message to notify that the other party in an open channel decided to close it. In particular,
+`inititator` is going to close the channel opened from `sender` to the `recipient`. The close
+will be enacted at the next relay-chain session change. This message is meant to be sent by
+the relay-chain to a para.
+
+- `initiator: u32 (Compact)`: The initiator of the channel closing.
+- `sender: u32 (Compact)`: The sender in the to-be closed channel.
+- `recipient: u32 (Compact)`: The recipient in the to-be closed channel.
+
+Safety: The message should originate directly from the relay-chain.
+
+Kind: *System Notification*
+
+Errors:
+
+### `HrmpInitOpenChannel`
+
+Initiate opening a channel from a parachain to a given recipient with given channel
+parameters.
+
+- `recipient: u32 (Compact)`, - The recipient in the to-be opened channel.
+- `proposed_max_capacity: u32 (Compact)` - specifies how many messages can be in the channel at once.
+- `proposed_max_message_size: u32 (Compact)` - specifies the maximum size of any of the messages.
+
+These numbers are a subject to the relay-chain configuration limits.
+
+The channel can be opened only after the recipient confirms it and only on a session
+change.
+
+Safety: The message should originate directly from the parachain.
+
+Kind: *Instruction*.
+
+### `HrmpAcceptOpenChannel`
+
+Accept a pending open channel request from the given sender.
+
+The channel will be opened only on the next session boundary.
+
+- `sender: u32 (Compact)`: The sender in the to-be opened channel. Also, the initiator of the channel opening.
+
+Safety: The message should originate directly from the parachain.
+
+Kind: *Instruction*.
+
+Errors:
+
+### `HrmpCloseChannel`
+
+Initiate unilateral closing of a channel. The origin must be either the sender or the
+recipient in the channel being closed.
+
+The closure can only happen on a session change.
+
+- `sender: u32 (Compact)`: The sender in the to-be closed channel.
+- `recipient: u32 (Compact)`: The recipient in the to-be closed channel.
+
+Safety: The message should originate directly from the parachain.
+
+Kind: *Instruction*.
 
 Errors:
 
